@@ -1,45 +1,18 @@
 module "zone" {
-    source        = "./modules/zone"
-    createZone    = true
-    zones = {
-        "private-zone" = {
-            domain_name = "test.internal.com"
-            vpc = [
-                {
-                vpc_id = "vpc-999999999"
-                },
-                {
-                vpc_id = "vpc-000000000"
-                },
-            ]
-            tags = {
-                Name = "private-zone"
-            }
-        }
-    }
-    tags = {
-        ManagedBy = "terraform"
-    }
+  source = "./modules/zone"
+
+  create = var.zone_create
+  zones  = var.zones
+  tags   = var.zone_tags
 }
 
 module "records" {
-    source                  = "./modules/records"
-    createRecord            = false
-    zone_id                 = "module.zone.route53_zone_id.private-zone" # If you already have hosted zone use hosted zone id
-    zone_name               = "module.zone.route53_zone_name.private-zone" # If you already have hosted zone use hosted zone name
-    recordName = [
-        {
-            name = "test"
-            type = "A"
-            ttl  = 3600
-            records = ["10.10.10.10"]
-        },
-        {
-            name = "test2"
-            type = "A"
-            ttl  = 3600
-            records = ["10.10.10.20"]
-        },
+  source = "./modules/records"
 
-    ]
+  create              = var.record_create
+  zone_id             = var.zone_id != null ? var.zone_id : (length(module.zone.route53_zone_zone_id) > 0 ? values(module.zone.route53_zone_zone_id)[0] : null)
+  zone_name           = var.zone_name != null ? var.zone_name : (length(module.zone.route53_zone_name) > 0 ? values(module.zone.route53_zone_name)[0] : null)
+  private_zone        = var.private_zone
+  records             = var.records
+  records_jsonencoded = var.records_jsonencoded
 }

@@ -1,5 +1,5 @@
-resource "aws_route53_zone" "route53_internal_zone" {
-  for_each = { for k, v in var.zones : k => v if var.createZone }
+resource "aws_route53_zone" "this" {
+  for_each = { for k, v in var.zones : k => v if var.create }
 
   name          = lookup(each.value, "domain_name", each.key)
   comment       = lookup(each.value, "comment", null)
@@ -15,9 +15,19 @@ resource "aws_route53_zone" "route53_internal_zone" {
       vpc_region = lookup(vpc.value, "vpc_region", null)
     }
   }
+
   tags = merge(
     lookup(each.value, "tags", {}),
     var.tags
   )
-}
 
+  dynamic "timeouts" {
+    for_each = try([each.value.timeouts], [])
+
+    content {
+      create = try(timeouts.value.create, null)
+      update = try(timeouts.value.update, null)
+      delete = try(timeouts.value.delete, null)
+    }
+  }
+}
